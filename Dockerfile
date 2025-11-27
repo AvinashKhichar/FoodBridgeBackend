@@ -1,5 +1,5 @@
 # ---- build stage ----
-FROM eclipse-temurin:17-jdk-slim AS build
+FROM eclipse-temurin:17-jdk
 WORKDIR /workspace
 
 # copy gradle wrapper and gradle files first for caching
