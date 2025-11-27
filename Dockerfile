@@ -1,33 +1,36 @@
+# Dockerfile (Gradle / Kotlin Spring Boot)
+# Multi-stage build: build the fat jar, then run with a minimal runtime image.
+
 # ---- build stage ----
-FROM eclipse-temurin:17-jdk-slim AS build
+FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /workspace
 
-# copy gradle wrapper and gradle files first for caching
+# copy Gradle wrapper and build files (cache friendly)
 COPY gradlew .
 COPY gradle gradle
-COPY build.gradle.kts ./
-# if using build.gradle (groovy) rename accordingly
-# COPY build.gradle ./
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
 
-# make wrapper executable
+# ensure wrapper is executable
 RUN chmod +x ./gradlew
 
 # copy source
 COPY . .
 
-# Build the jar (skip tests for faster builds unless you want them)
+# build the jar (skip tests to speed up CI; remove -x test if you want tests)
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # ---- runtime stage ----
-FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:17-jdk-jammy AS runtime
 WORKDIR /app
 
-# Copy the fat jar produced by Spring Boot
-# Adjust path if your jar has a different name or build tool creates in different path
+# copy the produced fat jar
 COPY --from=build /workspace/build/libs/*.jar app.jar
 
-# Expose (optional) — Render will set $PORT
+# optional: set a modest heap size (adjust if needed)
+ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx512m"
+
 EXPOSE 8080
 
-# Use PORT env var Render provides. Using sh -c so $PORT is expanded at runtime.
-ENTRYPOINT ["sh","-c","java -jar /app/app.jar --server.port=${PORT:-8080}"]
+# Run the jar and bind to the PORT Render provides (default 8080 if not set)
+ENTRYPOINT ["sh", "-c", "java $JAVA_TOOL_OPTIONS -jar /app/app.jar --server.port=${PORT:-8080}"]
