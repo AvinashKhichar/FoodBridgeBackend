@@ -12,4 +12,6 @@ interface CreateDoantionRepository : MongoRepository<Donation, ObjectId> {
     fun findByDonorId(donorId: ObjectId): List<Donation>
 
     fun deleteByDonationId(donationId: ObjectId)
+
+    fun findAllByListedTrue(): List<Donation>
 }

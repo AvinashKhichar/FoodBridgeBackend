@@ -8,6 +8,11 @@ import com.foodbridgebackend.Repositories.UserRepository
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Service
 class Listing(
@@ -119,5 +124,51 @@ class Listing(
         )
         return requestRepo.save(request)
 
+    }
+
+
+
+    //get part
+
+
+    fun getAllDonations(): List<Donation> {
+        return donationRepo.findAllByListedTrue()
+    }
+
+    fun getDonationsByDonor(donorIdStr: String): List<Donation> {
+        val donorObjectId = try {
+            ObjectId(donorIdStr)
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid donorId format: must be 24-hex characters")
+        }
+        return donationRepo.findByDonorId(donorObjectId).filter { it.listed }
+    }
+
+    fun getDonationById(donationIdStr: String): Donation {
+        val donationObjectId = try {
+            ObjectId(donationIdStr)
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid donationId format: must be 24-hex characters")
+        }
+        return donationRepo.findByDonationId(donationObjectId)
+            ?: throw NoSuchElementException("Donation not found for id $donationIdStr")
+    }
+
+    fun getDonationsNear(latitude: Double, longitude: Double, radiusKm: Double = 15.0): List<Donation> {
+        val all = donationRepo.findAllByListedTrue()
+        return all.filter { donation ->
+            val d = haversineKm(latitude, longitude, donation.latitude, donation.longitude)
+            d <= radiusKm
+        }
+    }
+
+
+    private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371.0 // Earth radius in km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2.0) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2.0)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return R * c
     }
 }

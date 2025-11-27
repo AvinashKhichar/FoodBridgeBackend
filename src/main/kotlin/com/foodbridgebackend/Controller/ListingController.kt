@@ -83,4 +83,59 @@ class ListingController (
             ResponseEntity.status(404).body(mapOf("error" to (e.message ?: "error")))
         }
     }
+
+
+
+    @GetMapping
+    fun getAll(): ResponseEntity<Any> {
+        return try {
+            val list = listing.getAllDonations()
+            ResponseEntity.ok(list)
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("error" to (e.message ?: "internal error")))
+        }
+    }
+
+    @GetMapping("/donor/{donorId}")
+    fun getByDonor(@PathVariable donorId: String): ResponseEntity<Any> {
+        return try {
+            val list = listing.getDonationsByDonor(donorId)
+            ResponseEntity.ok(list)
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("error" to (e.message ?: "internal error")))
+        }
+    }
+
+    // --- get single donation by id ---
+    @GetMapping("/single/{id}")
+    fun getById(@PathVariable id: String): ResponseEntity<Any> {
+        return try {
+            val donation = listing.getDonationById(id)
+            ResponseEntity.ok(donation)
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        } catch (e: NoSuchElementException) {
+            ResponseEntity.status(404).body(mapOf("error" to e.message))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("error" to (e.message ?: "internal error")))
+        }
+    }
+
+    // --- proximity search ---
+    // Example: GET /donations/near?lat=18.52&lon=73.85&radiusKm=15
+    @GetMapping("/near")
+    fun getNear(
+        @RequestParam lat: Double,
+        @RequestParam lon: Double,
+        @RequestParam(required = false, defaultValue = "15.0") radiusKm: Double
+    ): ResponseEntity<Any> {
+        return try {
+            val list = listing.getDonationsNear(lat, lon, radiusKm)
+            ResponseEntity.ok(list)
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("error" to (e.message ?: "internal error")))
+        }
+    }
 }
