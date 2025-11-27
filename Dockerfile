@@ -11,14 +11,19 @@ COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
-# ensure wrapper is executable
+# ensure wrapper is executable (harmless if already set)
 RUN chmod +x ./gradlew
+
+# Optional: fix CRLF line endings (helpful if contributors use Windows)
+# Uncomment the next two lines if you have had CRLF issues before:
+# RUN apt-get update && apt-get install -y dos2unix
+# RUN dos2unix ./gradlew || true
 
 # copy source
 COPY . .
 
-# build the jar (skip tests to speed up CI; remove -x test if you want tests)
-RUN ./gradlew clean bootJar -x test --no-daemon
+# Build using 'sh' to avoid any exec/permission problems
+RUN sh ./gradlew clean bootJar -x test --no-daemon
 
 # ---- runtime stage ----
 FROM eclipse-temurin:17-jdk-jammy AS runtime
@@ -27,7 +32,7 @@ WORKDIR /app
 # copy the produced fat jar
 COPY --from=build /workspace/build/libs/*.jar app.jar
 
-# optional: set a modest heap size (adjust if needed)
+# modest heap size (adjust as needed)
 ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx512m"
 
 EXPOSE 8080
