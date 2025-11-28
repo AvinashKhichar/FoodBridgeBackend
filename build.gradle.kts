@@ -42,6 +42,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    implementation("com.sendgrid:sendgrid-java:4.9.3")
+
 }
 
 kotlin {

@@ -9,7 +9,6 @@ import com.foodbridgebackend.Repositories.UserRepository
 import org.bson.types.ObjectId
 import org.springframework.http.HttpStatusCode
 import org.springframework.mail.SimpleMailMessage
-import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,7 +26,7 @@ class AuthService(
     private val refreshTokenRepo: RefereshTokenRepository,
     private val userRepository: UserRepository,
     private val passwordResetTokenRepo: PasswordResetTokenRepository,
-    private val mailSender: JavaMailSender
+    private val emailService: SendGridEmailService
 ) {
 
     data class TokenPair(
@@ -127,21 +126,9 @@ class AuthService(
 
         passwordResetTokenRepo.save(token)
 
-        val resetLink = "http://localhost:8080/auth/reset-password?token=$rawToken"
+        val resetLink = "https://foodbridgebackend-1.onrender.com/auth/reset-password?token=$rawToken"
 
-        val message = SimpleMailMessage().apply {
-            setTo(user.email)
-            subject = "Reset your FoodBridge password"
-            text = """
-            Click this link to reset your password:
-            
-            $resetLink
-            
-            The link expires in 15 minutes.
-        """.trimIndent()
-        }
-
-        mailSender.send(message)
+        emailService.sendResetEmail(user.email, resetLink)
     }
 
     fun resetPassword(rawToken: String, newPassword: String) {
